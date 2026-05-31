@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     playwright_headless: bool = True
     embedding_model: str = "all-MiniLM-L6-v2"
+    linkedin_session_cookies: str = ""
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 

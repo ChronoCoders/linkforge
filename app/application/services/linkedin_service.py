@@ -1,6 +1,9 @@
 import asyncio
+import json
 from collections.abc import Awaitable, Callable
 from typing import Any, Dict, List, Optional
+
+from loguru import logger
 
 from app.core.config import get_settings
 from app.core.exceptions import AuthError, RateLimitError, ScrapingError, ScrapingException
@@ -27,10 +30,24 @@ class LinkedInService:
         self.scraper = LinkedInScraper(
             headless=settings.playwright_headless, cookie_file=cookie_file
         )
+        self._load_session_cookies(settings.linkedin_session_cookies)
         self.embedding_service = EmbeddingService()
         self.sentiment_analyzer = SentimentAnalyzer()
         self.text_analyzer = TextAnalyzer()
         self.max_retries = 3
+
+    def _load_session_cookies(self, raw: str) -> None:
+        if not raw.strip():
+            return
+        try:
+            cookies = json.loads(raw)
+        except json.JSONDecodeError:
+            logger.warning("LINKEDIN_SESSION_COOKIES is not valid JSON; ignoring")
+            return
+        if isinstance(cookies, list):
+            self.scraper.set_cookies(cookies)
+        else:
+            logger.warning("LINKEDIN_SESSION_COOKIES must be a JSON array; ignoring")
 
     def set_cookies(self, cookies: List[Dict[str, Any]]) -> None:
         self.scraper.set_cookies(cookies)
