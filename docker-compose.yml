@@ -6,7 +6,7 @@ services:
     container_name: linkforge-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: linkforge
+      POSTGRES_USER: ${POSTGRES_USER:-linkforge}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
       POSTGRES_DB: linkforge
     ports:
@@ -14,7 +14,7 @@ services:
     volumes:
       - linkforge_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U linkforge -d linkforge"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-linkforge} -d linkforge"]
       interval: 10s
       timeout: 5s
       retries: 5
