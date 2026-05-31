@@ -43,7 +43,6 @@ with st.sidebar:
         [
             "Workflow",
             "Post Ingestion",
-            "Profile Management",
             "Analysis Results",
             "Performance Insights",
             "Next Post Ideas",
@@ -90,11 +89,10 @@ if nav == "Workflow":
     st.markdown(
         """
     **1. Post Ingestion** - Authenticate with cookies and scrape profiles/posts.
-    **2. Profile Management** - Handle multiple LinkedIn accounts.
-    **3. Analysis Results** - Run sentiment, themes, performance analysis with exports.
-    **4. Performance Insights** - View predictions and confidence charts.
-    **5. Next Post Ideas** - Get AI strategy and recommendation.
-    **6. Historical Trends** - Charts and downloadable data.
+    **2. Analysis Results** - Run sentiment, themes, performance analysis with exports.
+    **3. Performance Insights** - View predictions and confidence charts.
+    **4. Next Post Ideas** - Get AI strategy and recommendation.
+    **5. Historical Trends** - Charts and downloadable data.
     """
     )
     st.success("Follow left navigation for end-to-end scrape to recommendation flow.")
@@ -144,35 +142,6 @@ elif nav == "Post Ingestion":
                             use_container_width=True,
                             hide_index=True,
                         )
-            except Exception as e:
-                st.error(str(e))
-
-elif nav == "Profile Management":
-    st.header("Profile Management")
-    profile_id = st.number_input("Profile ID", min_value=1, step=1)
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Set Cookies")
-        cookie_input = st.text_area("JSON")
-        if st.button("Update"):
-            try:
-                cookies = json.loads(cookie_input)
-                resp = httpx.post(
-                    f"{api_url}/profiles/{profile_id}/cookies",
-                    json={"cookies": cookies},
-                    timeout=30,
-                )
-                if resp.status_code == 200:
-                    st.success("Updated")
-            except Exception as e:
-                st.error(str(e))
-    with col2:
-        st.subheader("Status")
-        if st.button("Check"):
-            try:
-                resp = httpx.get(f"{api_url}/profiles/{profile_id}/cookies", timeout=30)
-                if resp.status_code == 200:
-                    st.json(resp.json())
             except Exception as e:
                 st.error(str(e))
 
