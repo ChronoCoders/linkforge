@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import datetime
 
 import httpx
@@ -8,7 +9,7 @@ import streamlit as st
 
 st.set_page_config(page_title="LinkForge", layout="wide", initial_sidebar_state="expanded")
 
-API_BASE = "http://localhost:8000"
+API_BASE = os.environ.get("STREAMLIT_API_BASE", "http://localhost:8000")
 
 
 def get_api_base():

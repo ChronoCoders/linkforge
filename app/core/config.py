@@ -18,7 +18,6 @@ class Settings(BaseSettings):
     embedding_model: str = "all-MiniLM-L6-v2"
     api_host: str = "0.0.0.0"
     api_port: int = 8000
-    streamlit_api_base: str = "http://localhost:8000"
 
 
 @lru_cache
