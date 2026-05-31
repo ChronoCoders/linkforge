@@ -1,9 +1,12 @@
-from typing import Optional, List
+from typing import List, Optional
+
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from app.domain.entities.post import Post, Comment
+
+from app.domain.entities.post import Comment, Post
 from app.domain.repositories.post_repository import PostRepository
 from app.infrastructure.database.models import PostModel
+
 
 class SQLPostRepository(PostRepository):
     def __init__(self, db: AsyncSession):
@@ -11,7 +14,7 @@ class SQLPostRepository(PostRepository):
 
     def _to_entity(self, model: PostModel) -> Post:
         comments = []
-        for c in (model.comments or []):
+        for c in model.comments or []:
             if isinstance(c, dict):
                 comments.append(Comment(**c))
         return Post(
@@ -37,7 +40,12 @@ class SQLPostRepository(PostRepository):
         return self._to_entity(model) if model else None
 
     async def get_by_profile_id(self, profile_id: int, limit: int = 100) -> List[Post]:
-        stmt = select(PostModel).where(PostModel.profile_id == profile_id).order_by(PostModel.created_at.desc()).limit(limit)
+        stmt = (
+            select(PostModel)
+            .where(PostModel.profile_id == profile_id)
+            .order_by(PostModel.created_at.desc())
+            .limit(limit)
+        )
         result = await self.db.execute(stmt)
         models = result.scalars().all()
         return [self._to_entity(m) for m in models]
@@ -46,7 +54,9 @@ class SQLPostRepository(PostRepository):
         stmt = (
             select(PostModel)
             .where(PostModel.profile_id == profile_id)
-            .order_by((PostModel.like_count + PostModel.comment_count * 2 + PostModel.repost_count).desc())
+            .order_by(
+                (PostModel.like_count + PostModel.comment_count * 2 + PostModel.repost_count).desc()
+            )
             .limit(limit)
         )
         result = await self.db.execute(stmt)

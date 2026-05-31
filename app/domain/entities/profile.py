@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, HttpUrl
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
+
 
 class Experience(BaseModel):
     title: str
@@ -8,11 +10,13 @@ class Experience(BaseModel):
     duration: Optional[str] = None
     description: Optional[str] = None
 
+
 class Education(BaseModel):
     school: str
     degree: Optional[str] = None
     field: Optional[str] = None
     years: Optional[str] = None
+
 
 class Profile(BaseModel):
     id: Optional[int] = None

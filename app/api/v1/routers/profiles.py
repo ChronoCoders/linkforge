@@ -1,37 +1,46 @@
-from typing import Annotated, Optional, List, Dict, Any
+from typing import Annotated, Any, Dict, List
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from app.api.v1.schemas.profile import ProfileCreateRequest, ProfileResponse, ProfileListResponse
+
+from app.api.v1.dependencies import get_async_profile_repository
+from app.api.v1.schemas.profile import ProfileCreateRequest, ProfileListResponse, ProfileResponse
+from app.application.dto.profile_dto import ProfileCreateDTO, ProfileResponseDTO
 from app.application.use_cases.scrape_and_analyze import ScrapeAndAnalyzeUseCase
 from app.infrastructure.database.repositories.profile_repository_impl import SQLProfileRepository
-from app.api.v1.dependencies import get_async_profile_repository
 
 router = APIRouter(prefix="/profiles", tags=["profiles"])
+
 
 class CookieUpdateRequest(BaseModel):
     cookies: List[Dict[str, Any]]
 
+
 class ProfileWithCookiesResponse(ProfileResponse):
     has_cookies: bool = False
+
 
 @router.post("", response_model=ProfileResponse)
 async def create_profile(
     payload: ProfileCreateRequest,
     repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)],
-):
+) -> ProfileResponseDTO:
     use_case = ScrapeAndAnalyzeUseCase(repo)
     try:
-        return await use_case.execute(payload)
+        return await use_case.execute(ProfileCreateDTO(**payload.model_dump()))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/{profile_id}", response_model=ProfileResponse)
-async def get_profile(profile_id: int, repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)]):
+async def get_profile(
+    profile_id: int, repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)]
+) -> ProfileResponse:
     profile = await repo.get_by_id(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     return ProfileResponse(
-        id=profile.id,
+        id=profile.id or 0,
         linkedin_url=str(profile.linkedin_url),
         full_name=profile.full_name,
         headline=profile.headline,
@@ -45,8 +54,11 @@ async def get_profile(profile_id: int, repo: Annotated[SQLProfileRepository, Dep
         updated_at=profile.updated_at,
     )
 
+
 @router.get("", response_model=ProfileListResponse)
-async def list_profiles(repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)], limit: int = 50):
+async def list_profiles(
+    repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)], limit: int = 50
+) -> ProfileListResponse:
     profiles = await repo.list_recent(limit=limit)
     return ProfileListResponse(
         profiles=[
@@ -68,12 +80,13 @@ async def list_profiles(repo: Annotated[SQLProfileRepository, Depends(get_async_
         total=len(profiles),
     )
 
+
 @router.post("/{profile_id}/cookies")
 async def update_profile_cookies(
     profile_id: int,
     payload: CookieUpdateRequest,
     repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)],
-):
+) -> dict[str, Any]:
     profile = await repo.get_by_id(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
@@ -82,21 +95,25 @@ async def update_profile_cookies(
     await repo.update(profile)
     return {"status": "cookies updated", "profile_id": profile_id}
 
+
 @router.get("/{profile_id}/cookies")
 async def get_profile_cookies(
     profile_id: int,
     repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)],
-):
+) -> dict[str, Any]:
     profile = await repo.get_by_id(profile_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Profile not found")
     cookies = (profile.raw_data or {}).get("cookies", [])
     return {"profile_id": profile_id, "cookies": cookies, "has_cookies": len(cookies) > 0}
 
+
 @router.get("/with_auth", response_model=List[ProfileWithCookiesResponse])
-async def list_profiles_with_auth_status(repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)], limit: int = 50):
+async def list_profiles_with_auth_status(
+    repo: Annotated[SQLProfileRepository, Depends(get_async_profile_repository)], limit: int = 50
+) -> List[ProfileWithCookiesResponse]:
     profiles = await repo.list_recent(limit=limit)
-    result = []
+    result: List[ProfileWithCookiesResponse] = []
     for p in profiles:
         cookies = (p.raw_data or {}).get("cookies", [])
         resp = ProfileWithCookiesResponse(

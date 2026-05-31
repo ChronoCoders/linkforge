@@ -1,21 +1,29 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction import DictVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
 from app.domain.entities.post import Post
 
+
 class PerformancePredictor:
-    def __init__(self):
-        self.model = None
+    def __init__(self) -> None:
+        self.model: Optional[Pipeline] = None
         self.vectorizer = DictVectorizer()
         self.scaler = StandardScaler()
         self.known_themes = [
-            "tribalism", "personal_story", "technical_deep_dive", "critique",
-            "pragmatic_balance", "hft_embedded", "refactoring_safety"
+            "tribalism",
+            "personal_story",
+            "technical_deep_dive",
+            "critique",
+            "pragmatic_balance",
+            "hft_embedded",
+            "refactoring_safety",
         ]
-        self.pipeline = None
+        self.pipeline: Optional[Pipeline] = None
         self._engagement_mean: float = 0.0
         self._engagement_std: float = 1.0
 
@@ -57,10 +65,15 @@ class PerformancePredictor:
         X = self.vectorizer.fit_transform(feature_dicts).toarray()
         y = np.array([self._compute_engagement_score(p) for p in posts])
 
-        self.pipeline = Pipeline([
-            ("scaler", StandardScaler()),
-            ("regressor", RandomForestRegressor(n_estimators=100, random_state=42, max_depth=8))
-        ])
+        self.pipeline = Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                (
+                    "regressor",
+                    RandomForestRegressor(n_estimators=100, random_state=42, max_depth=8),
+                ),
+            ]
+        )
         self.pipeline.fit(X, y)
         self.model = self.pipeline
 
@@ -82,33 +95,52 @@ class PerformancePredictor:
         z = (engagement - self._engagement_mean) / self._engagement_std
         return float(1.0 / (1.0 + np.exp(-z)))
 
-    def generate_recommendations(self, base_sentiment: Dict[str, float], base_themes: List[str], num: int = 3) -> List[Dict[str, Any]]:
+    def generate_recommendations(
+        self, base_sentiment: Dict[str, float], base_themes: List[str], num: int = 3
+    ) -> List[Dict[str, Any]]:
         if self.pipeline is None:
             return []
 
         candidates = []
         tones = ["pragmatic_balance", "technical_deep_dive", "personal_story"]
         for tone in tones:
-            for theme in (base_themes + self.known_themes[:4]):
+            for theme in base_themes + self.known_themes[:4]:
                 if theme == tone:
                     continue
-                candidate = type("obj", (object,), {
-                    "like_count": 0, "comment_count": 0, "repost_count": 0,
-                    "comments": [],
-                    "raw_data": {
-                        "sentiment": {**base_sentiment, "pragmatic": 0.6 if "pragmatic" in tone else base_sentiment.get("pragmatic", 0.3)},
-                        "theme_analysis": {"themes": [tone, theme], "polarization_score": 0.15}
-                    }
-                })()
+                candidate = type(
+                    "obj",
+                    (object,),
+                    {
+                        "like_count": 0,
+                        "comment_count": 0,
+                        "repost_count": 0,
+                        "comments": [],
+                        "raw_data": {
+                            "sentiment": {
+                                **base_sentiment,
+                                "pragmatic": (
+                                    0.6
+                                    if "pragmatic" in tone
+                                    else base_sentiment.get("pragmatic", 0.3)
+                                ),
+                            },
+                            "theme_analysis": {"themes": [tone, theme], "polarization_score": 0.15},
+                        },
+                    },
+                )()
                 eng = self.predict_engagement(candidate)
                 prob = self.predict_success_probability(candidate)
-                candidates.append({
-                    "tone": tone,
-                    "theme": theme,
-                    "predicted_engagement": round(eng, 2),
-                    "success_probability": round(prob, 3),
-                    "confidence": round(min(0.95, 0.6 + (eng / 12)), 3)
-                })
+                candidates.append(
+                    {
+                        "tone": tone,
+                        "theme": theme,
+                        "predicted_engagement": round(eng, 2),
+                        "success_probability": round(prob, 3),
+                        "confidence": round(min(0.95, 0.6 + (eng / 12)), 3),
+                    }
+                )
 
-        candidates.sort(key=lambda x: (x["success_probability"], x["predicted_engagement"]), reverse=True)
+        candidates.sort(
+            key=lambda x: (x["success_probability"], x["predicted_engagement"]), reverse=True
+        )
         return candidates[:num]

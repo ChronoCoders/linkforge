@@ -1,22 +1,32 @@
-from typing import Optional, List, Dict, Any
-from app.domain.entities.profile import Profile
+import asyncio
+from collections.abc import Awaitable, Callable
+from typing import Any, Dict, List, Optional
+
+from app.core.config import get_settings
+from app.core.exceptions import AuthError, RateLimitError, ScrapingError, ScrapingException
 from app.domain.entities.post import Post
-from app.domain.repositories.profile_repository import ProfileRepository
+from app.domain.entities.profile import Profile
 from app.domain.repositories.post_repository import PostRepository
-from app.infrastructure.scraping.linkedin_scraper import LinkedInScraper
-from app.infrastructure.embeddings.embedding_service import EmbeddingService
+from app.domain.repositories.profile_repository import ProfileRepository
 from app.infrastructure.analysis.sentiment_analyzer import SentimentAnalyzer
 from app.infrastructure.analysis.text_analyzer import TextAnalyzer
-from app.core.config import get_settings
-from app.core.exceptions import ScrapingException, AuthError, RateLimitError, ScrapingError
-import asyncio
+from app.infrastructure.embeddings.embedding_service import EmbeddingService
+from app.infrastructure.scraping.linkedin_scraper import LinkedInScraper
+
 
 class LinkedInService:
-    def __init__(self, profile_repository: ProfileRepository, post_repository: Optional[PostRepository] = None, cookie_file: str = "cookies.json"):
+    def __init__(
+        self,
+        profile_repository: ProfileRepository,
+        post_repository: Optional[PostRepository] = None,
+        cookie_file: str = "cookies.json",
+    ) -> None:
         self.profile_repository = profile_repository
         self.post_repository = post_repository
         settings = get_settings()
-        self.scraper = LinkedInScraper(headless=settings.playwright_headless, cookie_file=cookie_file)
+        self.scraper = LinkedInScraper(
+            headless=settings.playwright_headless, cookie_file=cookie_file
+        )
         self.embedding_service = EmbeddingService()
         self.sentiment_analyzer = SentimentAnalyzer()
         self.text_analyzer = TextAnalyzer()
@@ -37,18 +47,20 @@ class LinkedInService:
         except Exception as e:
             raise AuthError(f"Authentication failed: {str(e)}")
 
-    async def _execute_with_retry(self, func, *args, **kwargs):
-        last_exc = None
+    async def _execute_with_retry(
+        self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any
+    ) -> Any:
+        last_exc: Optional[Exception] = None
         for attempt in range(self.max_retries):
             try:
                 return await func(*args, **kwargs)
             except RateLimitError as e:
                 last_exc = e
                 if attempt < self.max_retries - 1:
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
                 else:
                     raise
-            except AuthError as e:
+            except AuthError:
                 if attempt < self.max_retries - 1:
                     await self.authenticate()
                 else:
@@ -59,14 +71,21 @@ class LinkedInService:
                     await asyncio.sleep(1)
         raise last_exc or ScrapingException("Operation failed after retries")
 
-    async def get_or_scrape_profile(self, linkedin_url: str, force_refresh: bool = False, cookies: Optional[List[Dict]] = None) -> Profile:
+    async def get_or_scrape_profile(
+        self,
+        linkedin_url: str,
+        force_refresh: bool = False,
+        cookies: Optional[List[Dict[str, Any]]] = None,
+    ) -> Profile:
         if cookies:
             self.set_cookies(cookies)
         existing = await self.profile_repository.get_by_url(linkedin_url)
         if existing and not force_refresh:
             return existing
         try:
-            raw_data = await self._execute_with_retry(self.scraper.scrape_profile, linkedin_url, self.scraper.get_cookies())
+            raw_data = await self._execute_with_retry(
+                self.scraper.scrape_profile, linkedin_url, self.scraper.get_cookies()
+            )
         except Exception as e:
             if "auth" in str(e).lower() or "login" in str(e).lower():
                 raise AuthError(str(e))
@@ -88,12 +107,21 @@ class LinkedInService:
         saved = await self.profile_repository.save(profile)
         return saved
 
-    async def scrape_and_store_posts(self, profile_id: int, profile_url: str, max_posts: int = 20, cookies: Optional[List[Dict]] = None) -> List[Post]:
+    async def scrape_and_store_posts(
+        self,
+        profile_id: int,
+        profile_url: str,
+        max_posts: int = 20,
+        cookies: Optional[List[Dict[str, Any]]] = None,
+    ) -> List[Post]:
         if cookies:
             self.set_cookies(cookies)
         try:
             raw_posts = await self._execute_with_retry(
-                self.scraper.scrape_posts_with_comments, profile_url, max_posts, self.scraper.get_cookies()
+                self.scraper.scrape_posts_with_comments,
+                profile_url,
+                max_posts,
+                self.scraper.get_cookies(),
             )
         except Exception as e:
             if "rate" in str(e).lower():

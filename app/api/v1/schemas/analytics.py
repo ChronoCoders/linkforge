@@ -1,12 +1,16 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List, Dict
 from datetime import datetime
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class AnalyticsRequest(BaseModel):
     model_config = ConfigDict(strict=True)
     profile_id: int
     include_posts: bool = True
     include_sentiment: bool = True
+    include_historical: bool = False
+
 
 class AnalyticsResponse(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True)

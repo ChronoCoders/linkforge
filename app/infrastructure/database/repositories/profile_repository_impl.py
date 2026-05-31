@@ -1,9 +1,12 @@
-from typing import Optional, List
+from typing import List, Optional
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-from app.domain.entities.profile import Profile, Experience, Education
+
+from app.domain.entities.profile import Education, Experience, Profile
 from app.domain.repositories.profile_repository import ProfileRepository
 from app.infrastructure.database.models import ProfileModel
+
 
 class SQLProfileRepository(ProfileRepository):
     def __init__(self, db: AsyncSession):

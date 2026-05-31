@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
 
 class CommentQualityMetrics(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
@@ -8,6 +10,7 @@ class CommentQualityMetrics(BaseModel):
     question_ratio: float = 0.0
     positive_ratio: float = 0.0
     avg_quality_score: float = 0.0
+
 
 class AnalysisResult(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True, extra="forbid")

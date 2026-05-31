@@ -1,11 +1,15 @@
-from pydantic import BaseModel, HttpUrl, Field
-from typing import Optional, List
 from datetime import datetime
-from app.domain.entities.profile import Experience, Education
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, HttpUrl
+
+from app.domain.entities.profile import Education, Experience
+
 
 class ProfileCreateRequest(BaseModel):
     linkedin_url: HttpUrl
     force_refresh: bool = False
+
 
 class ProfileResponse(BaseModel):
     id: int
@@ -21,6 +25,7 @@ class ProfileResponse(BaseModel):
     skills: List[str] = Field(default_factory=list)
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
 
 class ProfileListResponse(BaseModel):
     profiles: List[ProfileResponse]

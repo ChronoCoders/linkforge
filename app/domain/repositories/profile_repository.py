@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import List, Optional
+
 from app.domain.entities.profile import Profile
+
 
 class ProfileRepository(ABC):
     @abstractmethod

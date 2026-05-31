@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict, field_validator
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class Comment(BaseModel):
     model_config = ConfigDict(strict=True, extra="forbid")
@@ -8,6 +10,7 @@ class Comment(BaseModel):
     author: Optional[str] = Field(default=None, max_length=200)
     like_count: int = Field(default=0, ge=0)
     quality_score: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
 
 class Post(BaseModel):
     model_config = ConfigDict(strict=True, from_attributes=True, extra="forbid")

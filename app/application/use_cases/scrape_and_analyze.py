@@ -1,24 +1,24 @@
 from app.application.dto.profile_dto import ProfileCreateDTO, ProfileResponseDTO
 from app.application.services.linkedin_service import LinkedInService
-from app.domain.repositories.profile_repository import ProfileRepository
 from app.domain.repositories.post_repository import PostRepository
-from app.core.config import get_settings
+from app.domain.repositories.profile_repository import ProfileRepository
+
 
 class ScrapeAndAnalyzeUseCase:
-    def __init__(self, profile_repository: ProfileRepository, post_repository: PostRepository | None = None):
+    def __init__(
+        self, profile_repository: ProfileRepository, post_repository: PostRepository | None = None
+    ) -> None:
         self.service = LinkedInService(profile_repository, post_repository)
-        self.settings = get_settings()
 
     async def execute(self, dto: ProfileCreateDTO) -> ProfileResponseDTO:
-        profile = await self.service.get_or_scrape_profile(str(dto.linkedin_url), force_refresh=dto.force_refresh)
-        posts = []
+        profile = await self.service.get_or_scrape_profile(
+            str(dto.linkedin_url), force_refresh=dto.force_refresh
+        )
         if self.service.post_repository:
-            cookies = None
-            posts = await self.service.scrape_and_store_posts(
+            await self.service.scrape_and_store_posts(
                 profile_id=profile.id or 0,
                 profile_url=str(dto.linkedin_url),
                 max_posts=12,
-                cookies=cookies,
             )
         return ProfileResponseDTO(
             id=profile.id or 0,

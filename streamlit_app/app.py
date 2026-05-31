@@ -1,16 +1,19 @@
-import streamlit as st
+import json
+from datetime import datetime
+
 import httpx
 import pandas as pd
 import plotly.express as px
-import json
-from datetime import datetime
+import streamlit as st
 
 st.set_page_config(page_title="LinkForge", layout="wide", initial_sidebar_state="expanded")
 
 API_BASE = "http://localhost:8000"
 
+
 def get_api_base():
     return st.session_state.get("api_base", API_BASE)
+
 
 if "api_base" not in st.session_state:
     st.session_state.api_base = API_BASE
@@ -18,13 +21,16 @@ if "api_base" not in st.session_state:
 if "linkedin_cookies" not in st.session_state:
     st.session_state.linkedin_cookies = []
 
+
 def download_csv(df: pd.DataFrame, filename: str):
     csv = df.to_csv(index=False)
     st.download_button("Download CSV", csv, filename, "text/csv", key=filename)
 
+
 def download_json(data: dict, filename: str):
     json_str = json.dumps(data, indent=2)
     st.download_button("Download JSON", json_str, filename, "application/json", key=filename)
+
 
 with st.sidebar:
     st.header("LinkForge")
@@ -33,13 +39,29 @@ with st.sidebar:
     st.divider()
     nav = st.radio(
         "Navigation",
-        ["Workflow", "Post Ingestion", "Profile Management", "Analysis Results", "Performance Insights", "Next Post Ideas", "Historical Trends"],
-        label_visibility="collapsed"
+        [
+            "Workflow",
+            "Post Ingestion",
+            "Profile Management",
+            "Analysis Results",
+            "Performance Insights",
+            "Next Post Ideas",
+            "Historical Trends",
+        ],
+        label_visibility="collapsed",
     )
 
     st.divider()
     with st.expander("LinkedIn Cookie Manager", expanded=False):
-        cookie_json = st.text_area("Cookies JSON", height=120, value=json.dumps(st.session_state.linkedin_cookies) if st.session_state.linkedin_cookies else "[]")
+        cookie_json = st.text_area(
+            "Cookies JSON",
+            height=120,
+            value=(
+                json.dumps(st.session_state.linkedin_cookies)
+                if st.session_state.linkedin_cookies
+                else "[]"
+            ),
+        )
         col_a, col_b, col_c = st.columns(3)
         with col_a:
             if st.button("Save Cookies", use_container_width=True):
@@ -64,14 +86,16 @@ current_cookies = st.session_state.linkedin_cookies
 
 if nav == "Workflow":
     st.header("Complete Workflow")
-    st.markdown("""
+    st.markdown(
+        """
     **1. Post Ingestion** - Authenticate with cookies and scrape profiles/posts.
     **2. Profile Management** - Handle multiple LinkedIn accounts.
     **3. Analysis Results** - Run sentiment, themes, performance analysis with exports.
     **4. Performance Insights** - View predictions and confidence charts.
     **5. Next Post Ideas** - Get AI strategy and recommendation.
     **6. Historical Trends** - Charts and downloadable data.
-    """)
+    """
+    )
     st.success("Follow left navigation for end-to-end scrape to recommendation flow.")
 
 elif nav == "Post Ingestion":
@@ -95,7 +119,9 @@ elif nav == "Post Ingestion":
                             scrape_payload = {"url": profile_url, "max_posts": max_posts}
                             if use_cookies and current_cookies:
                                 scrape_payload["cookies"] = current_cookies
-                            scrape_resp = httpx.post(f"{api_url}/scraping/profile", json=scrape_payload, timeout=180)
+                            scrape_resp = httpx.post(
+                                f"{api_url}/scraping/profile", json=scrape_payload, timeout=180
+                            )
                             if scrape_resp.status_code == 200:
                                 st.info("Posts done.")
                             st.json(profile)
@@ -112,7 +138,11 @@ elif nav == "Post Ingestion":
                     data = resp.json()
                     if data.get("profiles"):
                         df = pd.DataFrame(data["profiles"])
-                        st.dataframe(df[["id", "full_name", "headline"]], use_container_width=True, hide_index=True)
+                        st.dataframe(
+                            df[["id", "full_name", "headline"]],
+                            use_container_width=True,
+                            hide_index=True,
+                        )
             except Exception as e:
                 st.error(str(e))
 
@@ -126,7 +156,11 @@ elif nav == "Profile Management":
         if st.button("Update"):
             try:
                 cookies = json.loads(cookie_input)
-                resp = httpx.post(f"{api_url}/profiles/{profile_id}/cookies", json={"cookies": cookies}, timeout=30)
+                resp = httpx.post(
+                    f"{api_url}/profiles/{profile_id}/cookies",
+                    json={"cookies": cookies},
+                    timeout=30,
+                )
                 if resp.status_code == 200:
                     st.success("Updated")
             except Exception as e:
@@ -147,7 +181,11 @@ elif nav == "Analysis Results":
     if st.button("Run Analysis", type="primary"):
         with st.spinner("Analyzing..."):
             try:
-                resp = httpx.post(f"{api_url}/analytics/profile", json={"profile_id": int(profile_id), "include_posts": True}, timeout=90)
+                resp = httpx.post(
+                    f"{api_url}/analytics/profile",
+                    json={"profile_id": int(profile_id), "include_posts": True},
+                    timeout=90,
+                )
                 if resp.status_code == 200:
                     result = resp.json()
                     c1, c2, c3, c4 = st.columns(4)
@@ -171,7 +209,9 @@ elif nav == "Performance Insights":
     profile_id = st.number_input("Profile ID", min_value=1, step=1, value=1, key="perf")
     if st.button("Load"):
         try:
-            resp = httpx.post(f"{api_url}/analytics/profile", json={"profile_id": int(profile_id)}, timeout=60)
+            resp = httpx.post(
+                f"{api_url}/analytics/profile", json={"profile_id": int(profile_id)}, timeout=60
+            )
             if resp.status_code == 200:
                 data = resp.json()
                 st.metric("Prediction", f"{data.get('performance_prediction', 0):.2%}")
@@ -188,7 +228,11 @@ elif nav == "Next Post Ideas":
     profile_id = st.number_input("Profile ID", min_value=1, step=1, value=1, key="ideas")
     if st.button("Generate", type="primary"):
         try:
-            resp = httpx.post(f"{api_url}/analytics/recommendations", json={"profile_id": int(profile_id)}, timeout=60)
+            resp = httpx.post(
+                f"{api_url}/analytics/recommendations",
+                json={"profile_id": int(profile_id)},
+                timeout=60,
+            )
             if resp.status_code == 200:
                 data = resp.json()
                 plan = data.get("next_post_plan", {})
@@ -205,7 +249,11 @@ elif nav == "Historical Trends":
     profile_id = st.number_input("Profile ID", min_value=1, step=1, value=1, key="trends")
     if st.button("Load"):
         try:
-            resp = httpx.post(f"{api_url}/analytics/profile", json={"profile_id": int(profile_id), "include_posts": True}, timeout=60)
+            resp = httpx.post(
+                f"{api_url}/analytics/profile",
+                json={"profile_id": int(profile_id), "include_posts": True},
+                timeout=60,
+            )
             if resp.status_code == 200:
                 data = resp.json()
                 if "post_performance_reports" in data:

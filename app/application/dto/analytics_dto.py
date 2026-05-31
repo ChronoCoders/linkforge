@@ -1,12 +1,15 @@
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class AnalyticsRequestDTO(BaseModel):
     profile_id: int
     include_posts: bool = True
     include_sentiment: bool = True
     include_historical: bool = False
+
 
 class AnalyticsResponseDTO(BaseModel):
     profile_id: int

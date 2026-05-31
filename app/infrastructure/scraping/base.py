@@ -1,7 +1,8 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
 import json
+from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 
 class BaseScraper(ABC):
     def __init__(self, cookie_file: str = "cookies.json", headless: bool = True):
@@ -51,13 +52,17 @@ class BaseScraper(ABC):
         self._is_authenticated = False
         return False
 
-    async def login(self, email: Optional[str] = None, password: Optional[str] = None) -> bool:
+    async def login(self) -> bool:
         return False
 
     @abstractmethod
-    async def scrape_profile(self, url: str, cookies: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+    async def scrape_profile(
+        self, url: str, cookies: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         pass
 
     @abstractmethod
-    async def scrape_posts_with_comments(self, profile_url: str, max_posts: int = 15, cookies: Optional[List[Dict[str, Any]]] = None) -> List[Dict[str, Any]]:
+    async def scrape_posts_with_comments(
+        self, profile_url: str, max_posts: int = 15, cookies: Optional[List[Dict[str, Any]]] = None
+    ) -> List[Dict[str, Any]]:
         pass

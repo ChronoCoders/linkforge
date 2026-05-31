@@ -1,41 +1,98 @@
-from typing import Dict, List, Optional
 import re
 from collections import Counter
+from typing import Any, ClassVar, Dict, List, Optional
+
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
 
 class SentimentAnalyzer:
     _analyzer: SentimentIntensityAnalyzer | None = None
 
-    PRAGMATIC_TERMS = [
-        "depends", "tradeoff", "tradeoffs", "trade-off", "trade-offs", "context",
-        "nuance", "nuanced", "however", "balanced", "balance", "pragmatic",
-        "reasonable", "fair", "honest", "both", "it depends", "that said",
-        "to be fair", "on the other hand", "in practice", "case by case",
-        "context matters", "middle ground",
+    PRAGMATIC_TERMS: ClassVar[list[str]] = [
+        "depends",
+        "tradeoff",
+        "tradeoffs",
+        "trade-off",
+        "trade-offs",
+        "context",
+        "nuance",
+        "nuanced",
+        "however",
+        "balanced",
+        "balance",
+        "pragmatic",
+        "reasonable",
+        "fair",
+        "honest",
+        "both",
+        "it depends",
+        "that said",
+        "to be fair",
+        "on the other hand",
+        "in practice",
+        "case by case",
+        "context matters",
+        "middle ground",
     ]
-    TRIBALISM_TERMS = [
-        "always", "never", "obviously", "everyone", "nobody", "cult",
-        "brainwashed", "sheep", "idiots", "clowns", "morons", "stupid", "dumb",
-        "trash", "garbage", "superior", "inferior", "haters", "fanboys",
-        "zealots", "those people", "everyone knows", "anyone who",
-        "real engineers", "real programmers",
+    TRIBALISM_TERMS: ClassVar[list[str]] = [
+        "always",
+        "never",
+        "obviously",
+        "everyone",
+        "nobody",
+        "cult",
+        "brainwashed",
+        "sheep",
+        "idiots",
+        "clowns",
+        "morons",
+        "stupid",
+        "dumb",
+        "trash",
+        "garbage",
+        "superior",
+        "inferior",
+        "haters",
+        "fanboys",
+        "zealots",
+        "those people",
+        "everyone knows",
+        "anyone who",
+        "real engineers",
+        "real programmers",
     ]
-    TECHNICAL_TERMS = [
-        "implementation", "architecture", "algorithm", "complexity", "benchmark",
-        "latency", "throughput", "optimization", "memory", "compiler",
-        "concurrency", "performance", "thread", "allocation", "profiling",
-        "ownership", "borrow", "pointer", "kernel", "async", "lock",
+    TECHNICAL_TERMS: ClassVar[list[str]] = [
+        "implementation",
+        "architecture",
+        "algorithm",
+        "complexity",
+        "benchmark",
+        "latency",
+        "throughput",
+        "optimization",
+        "memory",
+        "compiler",
+        "concurrency",
+        "performance",
+        "thread",
+        "allocation",
+        "profiling",
+        "ownership",
+        "borrow",
+        "pointer",
+        "kernel",
+        "async",
+        "lock",
     ]
 
-    def __init__(self):
-        pass
-
-    def _load(self):
+    def _load(self) -> SentimentIntensityAnalyzer:
         if SentimentAnalyzer._analyzer is None:
             SentimentAnalyzer._analyzer = SentimentIntensityAnalyzer()
         return SentimentAnalyzer._analyzer
 
-    def _density(self, lowered: str, word_counts: Counter, n: int, keywords: List[str]) -> float:
+    def _density(
+        self, lowered: str, word_counts: "Counter[str]", n: int, keywords: List[str]
+    ) -> float:
         hits = 0
         for kw in keywords:
             if " " in kw or "-" in kw:
@@ -69,17 +126,22 @@ class SentimentAnalyzer:
             "technical_score": round(min(technical, 1.0), 4),
         }
 
-    def analyze(self, text: str, comments: Optional[List[Dict]] = None) -> Dict[str, float]:
+    def analyze(
+        self, text: str, comments: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, float]:
         combined = text or ""
         if comments:
-            combined += " " + " ".join(
-                c.get("text", "") for c in comments if isinstance(c, dict)
-            )
+            combined += " " + " ".join(c.get("text", "") for c in comments if isinstance(c, dict))
         combined = combined.strip()
         if not combined:
             return {
-                "neg": 0.0, "neu": 1.0, "pos": 0.0, "compound": 0.0,
-                "pragmatic": 0.0, "tribalism": 0.0, "technical_score": 0.0,
+                "neg": 0.0,
+                "neu": 1.0,
+                "pos": 0.0,
+                "compound": 0.0,
+                "pragmatic": 0.0,
+                "tribalism": 0.0,
+                "technical_score": 0.0,
             }
         analyzer = self._load()
         scores = dict(analyzer.polarity_scores(combined))

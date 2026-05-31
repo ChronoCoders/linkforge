@@ -1,59 +1,16 @@
-import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.pool import StaticPool
-from sqlalchemy.dialects.postgresql import JSONB
-from pgvector.sqlalchemy import Vector
-from app.infrastructure.database.base import Base
-from app.infrastructure.database.repositories.profile_repository_impl import SQLProfileRepository
-from app.infrastructure.database.repositories.post_repository_impl import SQLPostRepository
-from app.domain.entities.profile import Profile
-from app.domain.entities.post import Post, Comment
-from pydantic import HttpUrl
 from datetime import datetime
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+import pytest
+from pydantic import HttpUrl
 
+from app.domain.entities.post import Post
+from app.domain.entities.profile import Profile
+from app.infrastructure.database.repositories.post_repository_impl import SQLPostRepository
+from app.infrastructure.database.repositories.profile_repository_impl import SQLProfileRepository
 
-@compiles(JSONB, "sqlite")
-def _compile_jsonb_sqlite(element, compiler, **kw):
-    return "JSON"
-
-
-@compiles(Vector, "sqlite")
-def _compile_vector_sqlite(element, compiler, **kw):
-    return "TEXT"
-
-@pytest_asyncio.fixture
-async def async_engine():
-    engine = create_async_engine(
-        TEST_DATABASE_URL,
-        echo=False,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    yield engine
-    await engine.dispose()
-
-@pytest_asyncio.fixture
-async def db_session(async_engine):
-    async_session = async_sessionmaker(async_engine, expire_on_commit=False, class_=AsyncSession)
-    async with async_session() as session:
-        yield session
-
-@pytest_asyncio.fixture
-async def profile_repo(db_session):
-    return SQLProfileRepository(db_session)
-
-@pytest_asyncio.fixture
-async def post_repo(db_session):
-    return SQLPostRepository(db_session)
 
 @pytest.mark.asyncio
-async def test_profile_crud(profile_repo):
+async def test_profile_crud(profile_repo: SQLProfileRepository) -> None:
     profile = Profile(
         linkedin_url=HttpUrl("https://www.linkedin.com/in/test-rust-cpp"),
         full_name="Alex Rivera",
@@ -87,14 +44,16 @@ async def test_profile_crud(profile_repo):
     after_delete = await profile_repo.get_by_id(saved.id)
     assert after_delete is None
 
+
 @pytest.mark.asyncio
-async def test_post_crud(post_repo, profile_repo):
+async def test_post_crud(post_repo: SQLPostRepository, profile_repo: SQLProfileRepository) -> None:
     profile = Profile(
         linkedin_url=HttpUrl("https://www.linkedin.com/in/test-seed-profile"),
         full_name="Seed Profile",
         headline="Rust vs C++",
     )
     saved_profile = await profile_repo.save(profile)
+    assert saved_profile.id is not None
 
     post = Post(
         profile_id=saved_profile.id,
