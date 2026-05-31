@@ -120,9 +120,9 @@ STREAMLIT_API_BASE=http://localhost:8077 streamlit run streamlit_app/app.py --se
 ```
 
 The dashboard's sidebar provides navigation through the full workflow:
-ingestion, profile management, analysis results, performance insights, next-post
-recommendations, and historical trends. A cookie manager in the sidebar accepts
-LinkedIn session cookies for authenticated scraping.
+ingestion, analysis results, performance insights, next-post recommendations,
+and historical trends. A cookie manager in the sidebar accepts LinkedIn session
+cookies for the direct (non-persisted) scrape.
 
 ## Configuration
 
@@ -151,8 +151,6 @@ dimension requires a corresponding migration.
 | POST | `/profiles` | Ingest a profile and its recent posts |
 | GET | `/profiles/{id}` | Retrieve a stored profile |
 | GET | `/profiles` | List recent profiles |
-| POST | `/profiles/{id}/cookies` | Store LinkedIn cookies for a profile |
-| GET | `/profiles/{id}/cookies` | Read a profile's stored cookie status |
 | POST | `/scraping/profile` | Scrape a profile without persisting |
 | POST | `/analytics/profile` | Sentiment, themes, polarization, and prediction |
 | POST | `/analytics/recommendations` | Next-post plan and ML recommendations |
@@ -177,9 +175,13 @@ curl -X POST http://localhost:8000/analytics/profile \
 ## Authentication and scraping
 
 LinkedIn access is cookie-based; there is no username and password login flow.
-Provide session cookies either per request (the dashboard's cookie manager) or
-by storing them on a profile. The scraper retries with exponential backoff on
-rate limiting and re-authenticates on authentication errors. Because the scraper
+Cookies are read from local sources only and are never stored in the database.
+For persisted ingestion (`POST /profiles`), provide them via the
+`LINKEDIN_SESSION_COOKIES` environment variable (a JSON array) or a local,
+gitignored `cookies.json` file. For the direct, non-persisted scrape
+(`POST /scraping/profile`), pass them in the request body or via the dashboard's
+sidebar cookie manager. The scraper retries with exponential backoff on rate
+limiting and re-authenticates on authentication errors. Because the scraper
 depends on LinkedIn's page structure, selector changes upstream are the first
 thing to check if scraped fields come back empty.
 
