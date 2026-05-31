@@ -80,7 +80,7 @@ point inward toward the domain.
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-playwright install chromium
+playwright install --with-deps chromium
 cp .env.example .env
 ```
 
