@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: linkforge-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: linkforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+      POSTGRES_DB: linkforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - linkforge_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U linkforge -d linkforge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: >
+      postgres
+      -c shared_preload_libraries=vector
+
+volumes:
+  linkforge_pgdata:
+    driver: local
