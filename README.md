@@ -225,3 +225,33 @@ tests/             integration tests
 
 Logging is configured with loguru, writing to the console and to rotating files
 under `logs/`.
+
+## Disclaimer
+
+This software is provided for educational and research purposes. Automated
+access to LinkedIn is governed by the LinkedIn User Agreement and Professional
+Community Policies, which generally prohibit scraping, crawling, and automated
+data collection. Using the scraping features of this project against LinkedIn
+may violate those terms and can result in restriction or termination of your
+account, and potentially other legal consequences.
+
+You are solely responsible for how you use this software and for ensuring your
+use complies with LinkedIn's terms, applicable laws, and data protection and
+privacy regulations (such as the GDPR and CCPA) for any personal data you
+collect or process. Only operate it against accounts and data you are
+authorized to access, respect rate limits, and obtain consent where required.
+The authors and contributors accept no liability for misuse or for any damages
+arising from use of this software, as set out in the license.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+- MIT license ([LICENSE-MIT](LICENSE-MIT))
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
